@@ -2,14 +2,12 @@ package main
 
 import (
 	"log"
-	"github.com/hajimehoshi/ebiten"
+	"github.com/gopherjs/gopherwasm/js"
+	"net/http"
 )
 
-func loop(w *ebiten.Image) error{
-	log.Println("Hello!")
-	return nil
-}
-
 func main(){
-	ebiten.Run(loop, 100,100,1,"test")
+	addr:=js.Global().Get("document").Get("url")
+	log.Println("we are at the ",addr)
+	http.Request{}.ParseForm()
 }
