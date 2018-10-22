@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"log"
 	"time"
-	"fmt"
 	"strconv"
 )
 
@@ -35,24 +34,34 @@ func rootHandler (w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w,r,"/login", http.StatusPermanentRedirect)
 }
 
-func checkSessionCookie(r *http.Request) (user string){
+func checkSessionCookie(r *http.Request) sessionData{
 	log.Println("checkSession")
 	cookie,err:=r.Cookie("sessionID")
 	if err!=nil{
-		return ""
+		return sessionData{}
 	}
-	return cookie.Value
+	uid,err:=strconv.Atoi(cookie.Value)
+	if err!=nil{
+		return sessionData{}
+	}
+	log.Println("uid cookie: ",uid)
+	sd,ok:=m[int64(uid)]
+	if !ok{
+		return sessionData{}
+	}
+	return sd
 }
 
 func loginHandler (w http.ResponseWriter, r *http.Request) {
 	log.Println("loginHandler")
 	if r.Method == http.MethodGet {
-		sessID:=checkSessionCookie(r)
-		if sessID==""{
+		sessData:=checkSessionCookie(r)
+		empty:=sessionData{}
+		if sessData==empty {
 			http.ServeFile(w, r, "server/login.html")
 			return
 		}
-		log.Println("coming user with sess ID ",sessID)
+		log.Println("coming user with name ",sessData.user)
 		http.Redirect(w,r,"/hello", http.StatusOK)
 	}
 	if r.Method == http.MethodPost{
@@ -64,7 +73,7 @@ func loginHandler (w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "not valid pair", http.StatusUnauthorized)
 			return
 		}
-		cookieStr:=fmt.Sprint(sessID)
+		cookieStr:=strconv.Itoa(int(sessID))
 		log.Println("user-pass ",user, "-",pass," logged, got cookie ",cookieStr)
 		cookie:=&http.Cookie{
 			Name: "sessionID",
@@ -77,15 +86,15 @@ func loginHandler (w http.ResponseWriter, r *http.Request) {
 func helloHandler (w http.ResponseWriter, r *http.Request) {
 	log.Println("helloHandler")
 
-	sessID:=checkSessionCookie(r)
-	uid, err:=strconv.Atoi(sessID)
-	if sessID=="" || err!=nil{
+	sessData:=checkSessionCookie(r)
+	empty:=sessionData{}
+	if sessData==empty{
 		log.Println("somehow hello called without cookie")
 		http.Redirect(w,r,"/login", 403)
 		return
 	}
 
-	user := m[int64(uid)].user
+	user := sessData.user
 	log.Println("hello user ",user)
 	w.Write([]byte("Hello "+user+"!"))
 }
