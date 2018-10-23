@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 	"log"
-	"time"
 	"strconv"
+	"time"
 )
 
 type sessionData struct{
@@ -17,39 +17,14 @@ func init(){
 	m=make(map[int64] sessionData)
 }
 
-func checkLogin(user, pass string) (isValid bool, uid int64) {
-	if user=="" || pass == ""{
-		return false, 0
-	}
-	//check nice pass, but this time any is ok
-	uid = time.Now().UnixNano()
-	m[uid] = sessionData{
-		user: user,
-	}
-	return true, uid
-}
-
 func rootHandler (w http.ResponseWriter, r *http.Request) {
-	log.Println("rootHandler")
-	http.Redirect(w,r,"/login", http.StatusPermanentRedirect)
-}
-
-func checkSessionCookie(r *http.Request) sessionData{
-	log.Println("checkSession")
-	cookie,err:=r.Cookie("sessionID")
-	if err!=nil{
-		return sessionData{}
+	log.Println("rootHandler ",r.URL.String())
+	sessData:=checkSessionCookie(r)
+	if (sessData==sessionData{}){
+		http.Redirect(w,r,"/login", http.StatusTemporaryRedirect)
+		return
 	}
-	uid,err:=strconv.Atoi(cookie.Value)
-	if err!=nil{
-		return sessionData{}
-	}
-	log.Println("uid cookie: ",uid)
-	sd,ok:=m[int64(uid)]
-	if !ok{
-		return sessionData{}
-	}
-	return sd
+	http.Redirect(w,r,"/hello", http.StatusTemporaryRedirect)
 }
 
 func loginHandler (w http.ResponseWriter, r *http.Request) {
@@ -90,21 +65,55 @@ func helloHandler (w http.ResponseWriter, r *http.Request) {
 	empty:=sessionData{}
 	if sessData==empty{
 		log.Println("somehow hello called without cookie")
-		http.Redirect(w,r,"/login", 403)
+		http.Redirect(w,r,"/login", http.StatusTemporaryRedirect)
 		return
 	}
 
-	user := sessData.user
-	log.Println("hello user ",user)
-	w.Write([]byte("Hello "+user+"!"))
+	http.ServeFile(w,r,"server/wasmwrap.html")
+}
+
+func fileHandler (w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w,r,"server"+r.URL.String())
 }
 
 func main(){
-//	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/hello", helloHandler)
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/wasm_exec.js", fileHandler)
+	http.HandleFunc("/main.wasm", fileHandler)
 	err:=http.ListenAndServe(":8080",nil)
 	if err!=nil{
 		panic(err)
 	}
+}
+
+func checkSessionCookie(r *http.Request) sessionData{
+	log.Println("checkSession")
+	cookie,err:=r.Cookie("sessionID")
+	if err!=nil{
+		return sessionData{}
+	}
+	uid,err:=strconv.Atoi(cookie.Value)
+	if err!=nil{
+		return sessionData{}
+	}
+	log.Println("uid cookie: ",uid)
+	sd,ok:=m[int64(uid)]
+	if !ok{
+		return sessionData{}
+	}
+	return sd
+}
+
+func checkLogin(user, pass string) (isValid bool, uid int64) {
+	if user=="" || pass == ""{
+		return false, 0
+	}
+	//check nice pass, but this time any is ok
+	uid = time.Now().UnixNano()
+	m[uid] = sessionData{
+		user: user,
+	}
+	return true, uid
 }
