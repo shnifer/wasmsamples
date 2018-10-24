@@ -37,7 +37,7 @@ func loginHandler (w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Println("coming user with name ",sessData.user)
-		http.Redirect(w,r,"/hello", http.StatusOK)
+		http.Redirect(w,r,"/hello", http.StatusTemporaryRedirect)
 	}
 	if r.Method == http.MethodPost{
 		r.ParseForm()
@@ -73,20 +73,25 @@ func helloHandler (w http.ResponseWriter, r *http.Request) {
 }
 
 func fileHandler (w http.ResponseWriter, r *http.Request) {
+	log.Println("filehadler: "+"server"+r.URL.String())
 	http.ServeFile(w,r,"server"+r.URL.String())
 }
 
 func main(){
+	go gameListner()
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/hello", helloHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/wasm_exec.js", fileHandler)
 	http.HandleFunc("/main.wasm", fileHandler)
-	err:=http.ListenAndServe(":8080",nil)
-	if err!=nil{
+	http.HandleFunc("/ship.png", fileHandler)
+	http.HandleFunc("/furore.ttf", fileHandler)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
 		panic(err)
 	}
 }
+
 
 func checkSessionCookie(r *http.Request) sessionData{
 	log.Println("checkSession")
