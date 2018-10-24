@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"strconv"
+	"bytes"
 )
 
 type ShipData struct{
@@ -25,6 +26,7 @@ var Ships ShipsData
 var client *http.Client
 
 var myIdn int
+var target vec2.V2
 
 func init(){
 	Ships = make(ShipsData,0)
@@ -42,12 +44,12 @@ func networkLoop(){
 }
 
 func doRequest(){
-	req,err:=http.NewRequest(http.MethodGet, gameHostName, nil)
-	if err!=nil{
-		log.Println("doRequest ",err)
-		return
-	}
 	if myIdn==0{
+		req,err:=http.NewRequest(http.MethodGet, gameHostName, nil)
+		if err!=nil{
+			log.Println("doRequest ",err)
+			return
+		}
 		req.Header.Set("username", userName)
 		resp, err:=client.Do(req)
 		if err!=nil{
@@ -61,6 +63,13 @@ func doRequest(){
 			log.Println(err)
 		}
 		myIdn = idn
+		return
+	}
+	b,_:=json.Marshal(target)
+	tbuf:=bytes.NewBuffer(b)
+	req,err:=http.NewRequest(http.MethodGet, gameHostName, tbuf)
+	if err!=nil{
+		log.Println("doRequest ",err)
 		return
 	}
 	req.Header.Set("idn", strconv.Itoa(myIdn))
@@ -83,4 +92,10 @@ func doRequest(){
 		log.Println("can't unmarshal ",err)
 		return
 	}
+}
+
+func gameClickMouse(x,y int){
+	mu.Lock()
+	defer mu.Unlock()
+	target=vec2.V(float64(x), float64(y))
 }

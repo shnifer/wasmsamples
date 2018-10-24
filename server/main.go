@@ -79,6 +79,7 @@ func fileHandler (w http.ResponseWriter, r *http.Request) {
 
 func main(){
 	go gameListner()
+	go GameCycle()
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/hello", helloHandler)
 	http.HandleFunc("/login", loginHandler)

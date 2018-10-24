@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"github.com/gopherjs/gopherwasm/js"
+	"github.com/hajimehoshi/ebiten/inpututil"
 )
 
 var webHostName string
@@ -14,6 +15,10 @@ var userName string
 var Q *nigiri.Queue
 
 func mainLoop(win *ebiten.Image, dt float64) error{
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft){
+		x,y:=ebiten.CursorPosition()
+		gameClickMouse(x,y)
+	}
 	if ebiten.IsDrawingSkipped(){
 		return  nil
 	}
