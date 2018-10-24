@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"log"
 	"io/ioutil"
+	"math"
 )
 
 var iterMu *sync.Mutex
@@ -35,11 +36,20 @@ func init(){
 	targets = make(map[int]vec2.V2)
 }
 
+func sendOptions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+}
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method==http.MethodOptions{
+		sendOptions(w,r)
+		return
+	}
 	dataMu.Lock()
 	defer dataMu.Unlock()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	idn:=idn(r)
 	if idn==-1{
 		newidn:=nextIdn()
@@ -54,7 +64,8 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 			Idn: newidn,
 		})
 
-		w.Header().Set("idn", idnstr)
+		w.Write([]byte(idnstr))
+		log.Println("send to user ", name, "id=",idnstr)
 		return
 	}
 
@@ -120,8 +131,8 @@ func GameCycle(){
 }
 
 const dt=0.1
-const rotSpeed = 20
-const moveSpeed = 50
+const rotSpeed = 120
+const moveSpeed = 100
 
 func gameTick(){
 	dataMu.Lock()
@@ -155,7 +166,7 @@ func gameTick(){
 			continue
 		}
 		dAng:=dir-ship.Angle
-		if dAng>1 {
+		if math.Abs(dAng)>1 {
 			maxChange:=dt*rotSpeed
 			if dAng>maxChange {
 				dAng = maxChange

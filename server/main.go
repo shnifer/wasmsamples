@@ -18,7 +18,7 @@ func init(){
 }
 
 func rootHandler (w http.ResponseWriter, r *http.Request) {
-	log.Println("rootHandler ",r.URL.String())
+	log.Println("rootHandler ",r.URL.String(), r.Method)
 	sessData:=checkSessionCookie(r)
 	if (sessData==sessionData{}){
 		http.Redirect(w,r,"/login", http.StatusTemporaryRedirect)
@@ -55,6 +55,7 @@ func loginHandler (w http.ResponseWriter, r *http.Request) {
 			Value: cookieStr,
 		}
 		http.SetCookie(w, cookie)
+		http.Redirect(w,r,"/hello", http.StatusTemporaryRedirect)
 	}
 }
 

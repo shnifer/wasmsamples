@@ -57,17 +57,22 @@ func doRequest(){
 			return
 		}
 		defer resp.Body.Close()
-		idnstr:=resp.Header.Get("idn")
-		idn,err:=strconv.Atoi(idnstr)
+		buf,err:=ioutil.ReadAll(resp.Body)
 		if err!=nil{
 			log.Println(err)
+			return
+		}
+		idn,err:=strconv.Atoi(string(buf))
+		if err!=nil{
+			log.Println(err)
+			return
 		}
 		myIdn = idn
 		return
 	}
 	b,_:=json.Marshal(target)
 	tbuf:=bytes.NewBuffer(b)
-	req,err:=http.NewRequest(http.MethodGet, gameHostName, tbuf)
+	req,err:=http.NewRequest(http.MethodPost, gameHostName, tbuf)
 	if err!=nil{
 		log.Println("doRequest ",err)
 		return
