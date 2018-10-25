@@ -7,6 +7,9 @@ import (
 	"net/url"
 	"github.com/gopherjs/gopherwasm/js"
 	"github.com/hajimehoshi/ebiten/inpututil"
+	"net"
+	"strconv"
+	"time"
 )
 
 var webHostName string
@@ -49,6 +52,7 @@ func main(){
 	getHostName()
 	initGraph()
 	go networkLoop()
+	go udppings()
 	nigiri.Run(mainLoop,w,h,1,"test")
 }
 
@@ -70,4 +74,35 @@ func getHostName(){
 		gameHostName="http://localhost:8100"
 		userName="testLocal"
 	}
+}
+
+func listenUDP(conn *net.UDPConn){
+	buf := make([]byte, 100)
+	for{
+		n, addr, err:= conn.ReadFromUDP(buf)
+		if err!=nil {
+			log.Println("ReadFromUDP err: ",err)
+			continue
+		}
+		log.Println("recieved",n,"bytes from", addr,": ",string(buf[:n]))
+	}
+}
+
+func udppings(){
+		addr,err:=net.ResolveUDPAddr("udp","localhost:8001")
+		if err!=nil{
+			panic(err)
+		}
+		conn,err:=net.DialUDP("udp",nil,addr)
+		if err!=nil{
+			panic(err)
+		}
+		go listenUDP(conn)
+		i:=0
+		for{
+			i++
+			log.Println("send udp ",i)
+			conn.Write([]byte(strconv.Itoa(i)))
+			time.Sleep(time.Second)
+		}
 }

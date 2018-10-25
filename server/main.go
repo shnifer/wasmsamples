@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"net"
 )
 
 type sessionData struct{
@@ -81,6 +82,7 @@ func fileHandler (w http.ResponseWriter, r *http.Request) {
 func main(){
 	go gameListner()
 	go GameCycle()
+	go udpServer()
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/hello", helloHandler)
 	http.HandleFunc("/login", loginHandler)
@@ -123,4 +125,32 @@ func checkLogin(user, pass string) (isValid bool, uid int64) {
 		user: user,
 	}
 	return true, uid
+}
+
+const msgSize = 10000
+
+func listenLoop(conn *net.UDPConn){
+	buf := make([]byte, msgSize)
+	for{
+		n, addr, err:= conn.ReadFromUDP(buf)
+		if err!=nil {
+			log.Println("ReadFromUDP err: ",err)
+			continue
+		}
+		log.Println("recieved",n,"bytes from", addr,": ",string(buf[:n]))
+		resp:=append([]byte("pong: "), buf[:n]...)
+		conn.WriteTo(resp, addr)
+	}
+}
+
+func udpServer(){
+	UDPAddr,err:=net.ResolveUDPAddr("udp",":8001")
+	if err!=nil{
+		panic(err)
+	}
+	conn,err:=net.ListenUDP("udp",UDPAddr)
+	if err!=nil{
+		panic(err)
+	}
+	listenLoop(conn)
 }

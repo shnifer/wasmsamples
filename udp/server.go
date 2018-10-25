@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-const msgSize = 1000
+const msgSize = 10000
 
 func listenLoop(conn *net.UDPConn){
 	buf := make([]byte, msgSize)
@@ -18,6 +18,8 @@ func listenLoop(conn *net.UDPConn){
 			continue
 		}
 		log.Println("recieved",n,"bytes from", addr,": ",string(buf[:n]))
+		resp:=append([]byte("pong: "), buf[:n]...)
+		conn.WriteTo(resp, addr)
 	}
 }
 
